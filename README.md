@@ -1,6 +1,6 @@
 # Digital Twin Biodiversité Luxembourg (prototype hackathon)
 
-Outil d'aide à la décision : dessiner une zone de projet sur la carte du Luxembourg, simuler son effet potentiel sur la biodiversité, comparer plusieurs scénarios. Application 100 % front-end (Vite + React + TypeScript, MapLibre GL, Turf, Recharts, terra-draw).
+Outil d'aide à la décision, deux modes sur la même carte : **Observation** (observations individuelles MNHNL, filtres groupe/IUCN/période, clusters, fiche d'espèce avec historique, synthèse d'une zone dessinée) et **Simulation** (scénarios, classement multicritère, rapport HTML/PDF). Recherche de lieux via Nominatim (OpenStreetMap). Dessiner une zone de projet sur la carte du Luxembourg, simuler son effet potentiel sur la biodiversité, comparer plusieurs scénarios. Application 100 % front-end (Vite + React + TypeScript, MapLibre GL, Turf, Recharts, terra-draw).
 
 > **Aide à la décision, ne remplace pas une étude d'impact.** Le score est un indice heuristique, pas une prédiction.
 
@@ -27,6 +27,11 @@ Les fichiers `public/data` sont déjà générés. Les données brutes (`data/ra
 - Coefficients par type de projet et par groupe : jugement d'expert, non calibrés.
 - Confiance : médiane pondérée des observations par cellule touchée (haute ≥ 30, faible < 10 ou > 40 % de l'influence sur des cellules < 5 obs.).
 Visible dans l'application : panneau « Méthode et limites ».
+
+## Classement des scénarios et écopoints
+Indicateurs calculés sur les données du dépôt (src/engine/ranking.ts, poids par défaut dans `RANKING` de config.ts, modifiables dans l'interface) : espèces menacées, quasi menacées, richesse, part de surface à faible effort d'observation, fragmentation (proxy : km de linéaire en zone observée), compensation (aire dessinée ÷ emprise). Scénarios « non départageables » signalés selon l'incertitude.
+**Barème écopoints non appliqué** : il porte sur des types de biotopes, absents des données (voir l'onglet Méthode et le rapport).
+`public/data/observations.json` (ajout au pipeline, ~10 Mo) alimente la carte d'observations ; les autres fichiers de données sont inchangés.
 
 ## Limites connues
 - Effort d'observation inégal ; absence de donnée ≠ absence d'espèce. Toutes années confondues (1800–2026).

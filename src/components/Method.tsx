@@ -1,5 +1,9 @@
 import { MODEL, PRESETS } from '../engine/config.ts'
 import { GROUP_FR } from '../labels.ts'
+import { RANKING } from '../engine/config.ts'
+import { CRITERION_LABELS } from '../engine/ranking.ts'
+import type { CriterionKey } from '../engine/ranking.ts'
+import { ECOPOINTS_NOTE } from '../report.ts'
 import type { Meta } from '../data.ts'
 
 export default function Method({ meta, onClose }: { meta: Meta; onClose: () => void }) {
@@ -26,6 +30,14 @@ export default function Method({ meta, onClose }: { meta: Meta; onClose: () => v
           <thead><tr><th>Preset</th><th>Direct</th><th>Indirect</th><th>Chantier (d/i)</th><th>Exploit. (d/i)</th><th>Efficacité compensation</th><th>Rayon défaut</th><th>Sensibilités ≠ 1</th></tr></thead>
           <tbody>{Object.values(PRESETS).map((p) => <tr key={p.label}><th scope="row" title={p.help}>{p.label}</th><td>{p.directCoef}</td><td>{p.indirectCoef}</td><td>{p.phase.construction.direct}/{p.phase.construction.indirect}</td><td>{p.phase.operation.direct}/{p.phase.operation.indirect}</td><td>{p.compensationEfficiency}</td><td>{p.defaultRadiusM} m</td><td>{Object.entries(p.groupSensitivity).filter(([, v]) => v !== 1).map(([g, v]) => `${GROUP_FR[g as keyof typeof GROUP_FR]} ×${v}`).join(', ') || '–'}</td></tr>)}</tbody>
         </table></div>
+        <h3>Classement des scénarios</h3>
+        <ol>
+          <li>Indicateurs calculés uniquement sur les données du dépôt, pour les cellules de 1 km touchées : espèces menacées (IUCN VU/EN/CR), quasi menacées, richesse spécifique, part de l'influence sur des cellules à faible effort d'observation (incertitude), longueur de linéaire en zone observée (proxy de fragmentation, 0 pour une emprise non linéaire), part non compensée.</li>
+          <li>Chaque indicateur ÷ son maximum parmi les scénarios, puis somme pondérée (poids par défaut : {(Object.keys(RANKING.defaultWeights) as CriterionKey[]).map((k) => `${CRITERION_LABELS[k]} ${RANKING.defaultWeights[k] * 100} %`).join(' ; ')}). Poids modifiables dans l'onglet Classement ; ce sont des hypothèses.</li>
+          <li>Non départageables si l'écart composite &lt; {RANKING.tieBase} + {RANKING.tieUncertainty} × part moyenne de surface à faible effort des deux scénarios.</li>
+        </ol>
+        <h3>Barème écopoints</h3>
+        <p>{ECOPOINTS_NOTE}</p>
         <h3>Limites des données</h3>
         <ul>
           <li>Sources : {meta.sources.map((x) => x.name).join(' ; ')}. {s.conservees?.toLocaleString('fr-FR')} observations conservées sur {s.lues?.toLocaleString('fr-FR')} lues ({s.rejet_doublon?.toLocaleString('fr-FR')} doublons, {s.rejet_hors_luxembourg?.toLocaleString('fr-FR')} hors Luxembourg, {s.rejet_nom_non_binomial?.toLocaleString('fr-FR')} sans nom d'espèce).</li>

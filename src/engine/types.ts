@@ -54,5 +54,7 @@ export interface SimulationResult {
   confidence: { level: ConfidenceLevel; weightedMedianObs: number; lowDataShare: number }
   footprintHa: number
   lengthKm: number | null
+  /** Longueur (km) de l'infrastructure linéaire traversant des cellules où des espèces ont été observées ; null si l'emprise n'est pas linéaire. */
+  fragmentationKm: number | null
   warnings: string[]
 }

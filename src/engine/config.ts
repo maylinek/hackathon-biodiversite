@@ -101,3 +101,14 @@ export const MODEL = {
   /** Confiance : nb d'observations par cellule. */
   confidence: { lowObs: 5, highMedianObs: 30, lowMedianObs: 10, lowShareHigh: 0.1, lowShareLow: 0.4 },
 }
+
+/**
+ * Classement des scénarios (indicateurs calculés sur les données du dépôt uniquement).
+ * Poids par défaut = hypothèses de départ, modifiables dans l'interface. Somme normalisée à l'utilisation.
+ */
+export const RANKING = {
+  defaultWeights: { threatened: 0.35, nearThreatened: 0.1, richness: 0.2, lowEffort: 0.15, fragmentation: 0.1, compensation: 0.1 },
+  /** Deux scénarios sont jugés « non départageables » si l'écart de score composite < tieBase + tieUncertainty × part moyenne de surface à faible effort. */
+  tieBase: 0.05,
+  tieUncertainty: 0.15,
+}

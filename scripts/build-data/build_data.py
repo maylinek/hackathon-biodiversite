@@ -44,6 +44,7 @@ def main():
     sp = {}                     # key -> dict(name, group votes, iucn, prot, bird)
     cells = {}                  # (ix,iy) -> dict
     years = [9999, 0]
+    obs_rows = []               # observations conservées (pour observations.json)
     for folder, _ in SOURCES:
         path = os.path.join(ROOT, "data", "raw", folder, "occurrence.txt")
         with open(path, encoding="utf-8", newline="") as f:
@@ -65,6 +66,9 @@ def main():
                 g = group_of(row, bird)
                 s["g"][g] += 1
                 ym = re.match(r"(\d{4})", row["eventDate"] or "")
+                dm = re.match(r"(\d{4})-(\d{1,2})-(\d{1,2})", row["eventDate"] or "")
+                ymd = int(dm.group(1)) * 10000 + int(dm.group(2)) * 100 + int(dm.group(3)) if dm else (int(ym.group(1)) * 10000 if ym else 0)
+                obs_rows.append((key, round(la, 4), round(lo, 4), ymd, row["datasetName"] or "", (row["locality"] or row["verbatimLocality"] or "").strip()))
                 if ym: y = int(ym.group(1)); years[0] = min(years[0], y); years[1] = max(years[1], y)
                 ix = int((lo - LON0) / DLON); iy = int((la - LAT0) / DLAT)
                 c = cells.setdefault((ix, iy), {"obs": 0, "sp": collections.Counter(), "gobs": collections.Counter()})
@@ -93,6 +97,17 @@ def main():
     dump("species.json", {"fields": ["name", "group", "iucn", "protected"], "rows": [
         [k, sp_group[k], sp[k]["i"], 1 if sp[k]["p"] else 0] for k in keys]})
     dump("cell_species.json", cell_species)
+    # observations.json : observations individuelles (colonnaire, triées par espèce). Ajout additif : les autres sorties sont inchangées.
+    obs_rows.sort(key=lambda r: (idx[r[0]], r[3]))
+    dsl = sorted({r[4] for r in obs_rows}); dsi = {d: i for i, d in enumerate(dsl)}
+    locl = sorted({r[5] for r in obs_rows if r[5]}); loci = {l: i + 1 for i, l in enumerate(locl)}  # 0 = lieu-dit non renseigné
+    start = [0] * (len(keys) + 1)
+    for r in obs_rows: start[idx[r[0]] + 1] += 1
+    for i in range(len(keys)): start[i + 1] += start[i]
+    dump("observations.json", {"fields": "start[espece]=indice de la 1re observation ; lat/lon en 1e-4 deg. depuis (49.44, 5.72) ; date=AAAAMMJJ ; ds=indice datasets ; loc=indice lieux (0=non renseigne)",
+        "origin": [LAT0, LON0], "datasets": dsl, "localities": locl, "start": start,
+        "lat": [round((r[1] - LAT0) * 10000) for r in obs_rows], "lon": [round((r[2] - LON0) * 10000) for r in obs_rows],
+        "date": [r[3] for r in obs_rows], "ds": [dsi[r[4]] for r in obs_rows], "loc": [loci.get(r[5], 0) for r in obs_rows]})
     meta = {"cell_km": CELL_KM, "dlat": DLAT, "dlon": DLON, "origin": [LON0, LAT0], "bbox": [LON0, LAT0, LON1, LAT1],
             "years": years, "groups": GROUPS, "iucn_scale": {"0": "Données insuffisantes / non évalué", "1": "Préoccupation mineure / non menacé",
             "2": "Quasi menacé", "3": "Vulnérable", "4": "En danger", "5": "En danger critique"},

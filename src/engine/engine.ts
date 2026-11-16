@@ -70,7 +70,7 @@ export function emptyResult(warnings: string[] = []): SimulationResult {
   return {
     score: 0, level: 'low', directIndex: 0, indirectIndex: 0, compensatedIndex: 0, byGroup, speciesAffected: 0,
     threatenedAffected: 0, nearThreatenedAffected: 0, species: [], cells: [],
-    confidence: { level: 'none', weightedMedianObs: 0, lowDataShare: 1 }, footprintHa: 0, lengthKm: null, warnings,
+    confidence: { level: 'none', weightedMedianObs: 0, lowDataShare: 1 }, footprintHa: 0, lengthKm: null, fragmentationKm: null, warnings,
   }
 }
 
@@ -99,6 +99,8 @@ export function simulate(shape: Footprint, params: ProjectParams, data: Biodiver
   const cellsOut: CellImpact[] = []
   const exposure = new Map<number, 'direct' | 'indirect'>()
   const medianItems: { v: number; w: number }[] = []
+  const linear = shape.geometry.type === 'LineString'
+  const obsCells: Cell['bbox'][] = []
 
   for (const c of data.cells) {
     const [w, s, e, n] = c.bbox
@@ -127,6 +129,7 @@ export function simulate(shape: Footprint, params: ProjectParams, data: Biodiver
       gDirect[g] += cfg.directCoef * ph.direct * f * vg * directKeep
       gInd[g] += cfg.indirectCoef * ph.indirect * ind * vg
     }
+    if (linear && f > 0 && c.obs > 0) obsCells.push(c.bbox)
     cellsOut.push({ id: c.id, direct: f, indirect: ind, impact: dI * directKeep + iI })
     medianItems.push({ v: c.obs, w: f + ind })
     for (const id of data.cellSpecies[c.id] ?? []) {
@@ -141,6 +144,16 @@ export function simulate(shape: Footprint, params: ProjectParams, data: Biodiver
   res.directIndex = direct; res.indirectIndex = indirect; res.compensatedIndex = compensated
   res.cells = cellsOut
   res.footprintHa = turf.area(footprint) / 10000
+  if (linear) {
+    // le tracé est découpé en tronçons de 100 m, chacun attribué à une seule cellule (intervalle semi-ouvert) : pas de double comptage
+    let km = 0
+    const pieces = turf.lineChunk(shape as Feature<import('geojson').LineString>, 0.1, { units: 'kilometers' }).features
+    for (const p of pieces) {
+      const [x, y] = turf.along(p, turf.length(p, { units: 'kilometers' }) / 2, { units: 'kilometers' }).geometry.coordinates
+      if (obsCells.some(([w, s, e, n]) => x >= w && x < e && y >= s && y < n)) km += turf.length(p, { units: 'kilometers' })
+    }
+    res.fragmentationKm = km
+  }
   res.lengthKm = shape.geometry.type === 'LineString' ? turf.length(shape, { units: 'kilometers' }) : null
   for (const [id, ex] of exposure) {
     res.species.push({ id, exposure: ex })

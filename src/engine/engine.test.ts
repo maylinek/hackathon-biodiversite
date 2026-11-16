@@ -68,3 +68,32 @@ test('compensation 100 % : impact direct réduit selon l\'efficacité, jamais n�
 test('rayon d\'influence nul : aucun impact indirect', () => {
   assert.equal(simulate(square(0.5), { ...base, radiusM: 0 }, dense).indirectIndex, 0)
 })
+
+import { rankScenarios } from './ranking.ts'
+test('fragmentation : null pour un polygone, > 0 pour une ligne en zone observée', () => {
+  assert.equal(simulate(square(0.5), base, dense).fragmentationKm, null)
+  const line = turf.lineString([[centre[0] - 0.05, centre[1]], [centre[0] + 0.05, centre[1]]])
+  const r = simulate(line, { ...base, preset: 'road' }, dense)
+  assert.ok(r.fragmentationKm! > 5 && r.fragmentationKm! <= r.lengthKm! * 1.01)
+  assert.equal(simulate(line, { ...base, preset: 'road' }, empty).fragmentationKm, 0)
+})
+
+test('classement : le scénario le moins impactant est premier ; la compensation améliore le rang', () => {
+  const refs = computeReferences(dense.cells)
+  const small = simulate(square(0.3), base, dense, refs), big = simulate(square(1.5), { ...base, radiusM: 2000 }, dense, refs)
+  const bigThr = { ...big, threatenedAffected: small.threatenedAffected + 10, speciesAffected: small.speciesAffected + 30 }
+  const r = rankScenarios([{ id: 'big', result: bigThr, compensationPct: 0 }, { id: 'small', result: small, compensationPct: 0 }])
+  assert.equal(r[0].id, 'small'); assert.ok(r[0].best); assert.equal(r[1].rank, 2)
+  const r2 = rankScenarios([{ id: 'a', result: small, compensationPct: 0 }, { id: 'b', result: small, compensationPct: 80 }])
+  assert.equal(r2[0].id, 'b')
+})
+
+test('classement : scénarios identiques => non départageables ; poids modifiables', () => {
+  const x = simulate(square(0.5), base, dense)
+  const r = rankScenarios([{ id: 'a', result: x, compensationPct: 0 }, { id: 'b', result: x, compensationPct: 0 }])
+  assert.deepEqual(r[0].tiedWith, ['b'])
+  const hi = { ...x, threatenedAffected: 50 }, lo = { ...x, speciesAffected: x.speciesAffected + 500 }
+  const w0 = { threatened: 1, nearThreatened: 0, richness: 0, lowEffort: 0, fragmentation: 0, compensation: 0 }
+  assert.equal(rankScenarios([{ id: 'hi', result: hi, compensationPct: 0 }, { id: 'lo', result: lo, compensationPct: 0 }], w0)[0].id, 'lo')
+  assert.equal(rankScenarios([{ id: 'hi', result: hi, compensationPct: 0 }, { id: 'lo', result: lo, compensationPct: 0 }], { ...w0, threatened: 0, richness: 1 })[0].id, 'hi')
+})

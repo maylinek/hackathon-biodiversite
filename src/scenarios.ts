@@ -1,7 +1,8 @@
 import { PRESETS } from './engine/config.ts'
 import type { Footprint, PresetId, ProjectParams } from './engine/types.ts'
 
-export interface Scenario { id: string; name: string; shape: Footprint | null; params: ProjectParams }
+export interface Scenario { id: string; name: string; shape: Footprint | null; comp?: Footprint | null; params: ProjectParams }
+/** comp : zone de compensation dessinée (polygone) ; si présente, le % compensé = surface compensée / emprise (plafonné à 100 %) */
 export const BASELINE_ID = 'baseline'
 export const PALETTE = ['#0072B2', '#E69F00', '#009E73', '#CC79A7', '#D55E00', '#56B4E9', '#8c6d1f', '#6a3d9a'] // Okabe-Ito, daltonisme
 const KEY = 'dtbl.scenarios.v1'
