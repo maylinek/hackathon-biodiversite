@@ -1,0 +1,7 @@
+node_modules
+dist
+.tools
+data/raw
+.claude
+.DS_Store
+scripts/profile*.py

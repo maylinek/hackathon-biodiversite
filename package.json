@@ -1,0 +1,29 @@
+{
+  "name": "digital-twin-biodiversite-lu",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "build-data": "python3 -I scripts/build-data/build_data.py",
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "node --test src/engine/"
+  },
+  "dependencies": {
+    "@turf/turf": "^7.4.0",
+    "maplibre-gl": "^6.18.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "recharts": "^3.10.1",
+    "terra-draw": "^1.40.0",
+    "terra-draw-maplibre-gl-adapter": "^1.5.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.3.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8"
+  }
+}
